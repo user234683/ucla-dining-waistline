@@ -70,6 +70,10 @@ def get_recipe_info(recipe_link):
         # nfnutrient.text example: Saturated Fat 3.4g 17%
         match = re.search(r'([a-zA-Z\s]+)(\d+(?:\.\d+)?)([^\d\s]?g)',
                           nfnutrient.text)
+        if not match:
+            print('Warning: missing nutrient ' + nfnutrient.text + ' for',
+                  recipe_link)
+            continue
         key_name = nutrient_key_names[match.group(1).strip().lower()]
         nutrients[key_name] = match.group(2).strip()
 
