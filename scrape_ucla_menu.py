@@ -6,7 +6,7 @@ import re
 
 
 DINING_HALL = 'DeNeve'
-
+have_already = set()
 
 # https://www.fda.gov/food/new-nutrition-facts-label/daily-value-new-nutrition-and-supplement-facts-labels
 daily_values = {
@@ -110,6 +110,9 @@ def get_dining_hall_menu(dining_hall, date):
                 recipe_url = recipe_link['href']
                 recipe_name = recipe_link.text
                 recipe_id = re.search('/Recipes/(\d+)/', recipe_url).group(1)
+                if recipe_id in have_already:
+                    continue
+                print('Getting ' + recipe_name + ', ' + recipe_id)
                 menu_item = {
                     'name': recipe_name,
                     'brand': dining_hall + ' ' + bar_name + ' ' + meal_time,
@@ -119,6 +122,14 @@ def get_dining_hall_menu(dining_hall, date):
                 menu_items.append(menu_item)
                                         
     return menu_items
+
+try:
+    with open('ucla_menu_' + DINING_HALL + '.json', 'r', encoding='utf-8') as f:
+        for food in json.loads(f.read())['foodList']:
+            have_already.add(food['uniqueId'])
+except (FileNotFoundError, json.decoder.JSONDecodeError):
+    pass
+
 
 with open('ucla_menu_' + DINING_HALL + '.json', 'w', encoding='utf-8') as f:
     info = {
