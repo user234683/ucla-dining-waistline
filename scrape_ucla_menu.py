@@ -3,9 +3,15 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import re
+import sys
 
+DINING_HALLS = {
+    'd': 'DeNeve',
+    'b': 'BruinPlate',
+    'e': 'Epicuria'
+}
 
-DINING_HALL = 'DeNeve'
+DINING_HALL = DINING_HALLS[sys.argv[1]]
 have_already = set()
 
 # https://www.fda.gov/food/new-nutrition-facts-label/daily-value-new-nutrition-and-supplement-facts-labels
@@ -82,6 +88,10 @@ def get_recipe_info(recipe_link):
         vit_name = nfvit.find('span', class_='nfvitname').text
         vit_dv = nfvit.find('span', class_='nfvitpct').text.strip('% ')
         key_name = nutrient_key_names[vit_name.strip().lower()]
+        if not re.fullmatch(r'\d+', vit_dv):
+            print('Warning: missing nutrient', vit_name, vit_dv, 'for',
+                  recipe_link)
+            continue
         nutrients[key_name] = float(vit_dv)/100*daily_values[key_name]
 
     return(info)
@@ -127,17 +137,22 @@ def get_dining_hall_menu(dining_hall, date):
                                         
     return menu_items
 
+current_food_list = []
+
 try:
     with open('ucla_menu_' + DINING_HALL + '.json', 'r', encoding='utf-8') as f:
-        for food in json.loads(f.read())['foodList']:
+        current_food_list = json.loads(f.read())['foodList']
+        for food in current_food_list:
             have_already.add(food['uniqueId'])
 except (FileNotFoundError, json.decoder.JSONDecodeError):
     pass
 
 
+new_food_list = get_dining_hall_menu(DINING_HALL, '')
+
 with open('ucla_menu_' + DINING_HALL + '.json', 'w', encoding='utf-8') as f:
     info = {
         'version': 1,
-        'foodList': get_dining_hall_menu(DINING_HALL, ''),
+        'foodList': current_food_list + new_food_list,
     }
     f.write(json.dumps(info, indent=4, sort_keys=True))
